@@ -46,9 +46,57 @@ def call_llm_detect_domain(user_text: str) -> str:
     domain = data.get("domain", "generic")
     return domain
 
+# app/llm_domain.py
+import os, json
+from openai import OpenAI
+from dotenv import load_dotenv
+from app.llm import call_llm_domain_ir
+load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+DOMAIN_SYSTEM_PROMPT = """
+You are a strict domain classifier for algorithm / AI descriptions.
+
+You MUST output ONLY JSON of the form:
+{"domain": "<one_of_allowed>"}
+
+Allowed domains:
+- "cnn_param"
+- "sorting"
+- "transformer"
+- "cache"
+- "math"
+- "generic"
+
+Classification rules:
+- If the text mentions convolution, kernels, padding, stride, CNN → "cnn_param"
+- If the text mentions sorting, array, bubble sort, selection sort, insertion sort, quicksort → "sorting"
+- If the text mentions Transformer, self-attention, Query/Key/Value, attention heads → "transformer"
+- If the text mentions cache, FIFO, LRU, queues, eviction → "cache"
+- If the text mentions derivatives, integrals, probability, expectation, variance, matrices → "math"
+- Otherwise → "generic"
+
+Return ONLY JSON. No extra text, no comments.
+"""
+
+def call_llm_detect_domain(user_text: str) -> str:
+    """LLM이 사용자 입력을 보고 도메인만 분류하게 하는 전용 함수."""
+    prompt = f'Text:\n"""\n{user_text}\n"""\n\nReturn JSON with the "domain" field only.'
+    resp = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": DOMAIN_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+    )
+    data = json.loads(resp.choices[0].message.content)
+    domain = data.get("domain", "generic")
+    return domain
+
 def build_sorting_trace_ir(user_text: str) -> dict:
     """
-    자연어 정렬 설명에서 sorting_trace IR을 생성하는 thin wrapper.
-    prompts.py의 DOMAIN_PROMPTS["sorting_trace"]를 사용한다.
+    정렬 trace는 도메인 템플릿 시스템(domain_ir)을 그대로 사용.
+    (sorting_trace 템플릿은 prompts.py에 이미 존재함.)
     """
     return call_llm_domain_ir("sorting_trace", user_text)

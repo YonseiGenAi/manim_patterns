@@ -34,30 +34,45 @@ User text:
 """
     },
 
-    "sorting_trace": {
-        "system": """
-You are a sorting algorithm visual trace generator.
-Extract the array and generate a full bubble-sort-like trace.
-Return ONLY JSON.
-""",
-        "template": """
-Generate a bubble-sort trace for the user's request.
+      "sorting_trace": {
+      "system": """
+  You are a sorting algorithm visual trace generator.
 
-User request:
-{text}
+  Your job:
+  1. Identify which sorting algorithm the user wants (bubble_sort, selection_sort, insertion_sort, quicksort, merge_sort, etc.).
+  2. Extract the array from the user request.
+  3. Generate the FULL step-by-step trace for that sorting algorithm.
 
-Output JSON with this structure:
+  Return ONLY JSON.
+  """,
+      "template": """
+  User request:
+  {text}
 
-{{
-  "algorithm": "bubble_sort",
-  "input": {{ "array": [5, 1, 4, 2, 8] }},
-  "trace": [
-    {{ "step": 1, "compare": [0,1], "swap": true,  "array": [1,5,4,2,8] }},
-    {{ "step": 2, "compare": [1,2], "swap": true,  "array": [1,4,5,2,8] }}
-  ]
-}}
-"""
-    },
+  Extract:
+  - the sorting algorithm name (bubble_sort / selection_sort / insertion_sort / quicksort / merge_sort / heap_sort ...)
+  - the integer array
+
+  Then output JSON like:
+
+  {{
+    "algorithm": "<detected_sorting_algorithm>",
+    "input": { "array": [...] },
+    "trace": [
+      { "step": 1, "compare": [i, j], "swap": true/false, "array": [...] },
+      ...
+    ]
+  }}
+
+  Rules:
+  - "algorithm" must match the sorting algorithm truly intended or implied by the user request.
+  - If the user clearly mentions the algorithm name, obey it.
+  - If the user does NOT mention any algorithm, choose the algorithm that best fits the description.
+  - "array" must come from the user request.
+  - "trace" must be a fully detailed chronological step list for THAT algorithm.
+  - Do NOT output anything except valid JSON.
+  """
+  },
 
 
 
